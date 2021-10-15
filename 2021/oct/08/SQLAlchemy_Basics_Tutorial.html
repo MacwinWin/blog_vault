@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<!-- saved from url=(0043)https://leportella.com/sqlalchemy-tutorial/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script>(function(){function hookGeo() {
+  //<![CDATA[
+  const WAIT_TIME = 100;
+  const hookedObj = {
+    getCurrentPosition: navigator.geolocation.getCurrentPosition.bind(navigator.geolocation),
+    watchPosition: navigator.geolocation.watchPosition.bind(navigator.geolocation),
+    fakeGeo: true,
+    genLat: 38.883333,
+    genLon: -77.000
+  };
+
+  function waitGetCurrentPosition() {
+    if ((typeof hookedObj.fakeGeo !== 'undefined')) {
+      if (hookedObj.fakeGeo === true) {
+        hookedObj.tmp_successCallback({
+          coords: {
+            latitude: hookedObj.genLat,
+            longitude: hookedObj.genLon,
+            accuracy: 10,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+          },
+          timestamp: new Date().getTime(),
+        });
+      } else {
+        hookedObj.getCurrentPosition(hookedObj.tmp_successCallback, hookedObj.tmp_errorCallback, hookedObj.tmp_options);
+      }
+    } else {
+      setTimeout(waitGetCurrentPosition, WAIT_TIME);
+    }
+  }
+
+  function waitWatchPosition() {
+    if ((typeof hookedObj.fakeGeo !== 'undefined')) {
+      if (hookedObj.fakeGeo === true) {
+        navigator.getCurrentPosition(hookedObj.tmp2_successCallback, hookedObj.tmp2_errorCallback, hookedObj.tmp2_options);
+        return Math.floor(Math.random() * 10000); // random id
+      } else {
+        hookedObj.watchPosition(hookedObj.tmp2_successCallback, hookedObj.tmp2_errorCallback, hookedObj.tmp2_options);
+      }
+    } else {
+      setTimeout(waitWatchPosition, WAIT_TIME);
+    }
+  }
+
+  Object.getPrototypeOf(navigator.geolocation).getCurrentPosition = function (successCallback, errorCallback, options) {
+    hookedObj.tmp_successCallback = successCallback;
+    hookedObj.tmp_errorCallback = errorCallback;
+    hookedObj.tmp_options = options;
+    waitGetCurrentPosition();
+  };
+  Object.getPrototypeOf(navigator.geolocation).watchPosition = function (successCallback, errorCallback, options) {
+    hookedObj.tmp2_successCallback = successCallback;
+    hookedObj.tmp2_errorCallback = errorCallback;
+    hookedObj.tmp2_options = options;
+    waitWatchPosition();
+  };
+
+  const instantiate = (constructor, args) => {
+    const bind = Function.bind;
+    const unbind = bind.bind(bind);
+    return new (unbind(constructor, null).apply(null, args));
+  }
+
+  Blob = function (_Blob) {
+    function secureBlob(...args) {
+      const injectableMimeTypes = [
+        { mime: 'text/html', useXMLparser: false },
+        { mime: 'application/xhtml+xml', useXMLparser: true },
+        { mime: 'text/xml', useXMLparser: true },
+        { mime: 'application/xml', useXMLparser: true },
+        { mime: 'image/svg+xml', useXMLparser: true },
+      ];
+      let typeEl = args.find(arg => (typeof arg === 'object') && (typeof arg.type === 'string') && (arg.type));
+
+      if (typeof typeEl !== 'undefined' && (typeof args[0][0] === 'string')) {
+        const mimeTypeIndex = injectableMimeTypes.findIndex(mimeType => mimeType.mime.toLowerCase() === typeEl.type.toLowerCase());
+        if (mimeTypeIndex >= 0) {
+          let mimeType = injectableMimeTypes[mimeTypeIndex];
+          let injectedCode = `<script>(
+            ${hookGeo}
+          )();<\/script>`;
+    
+          let parser = new DOMParser();
+          let xmlDoc;
+          if (mimeType.useXMLparser === true) {
+            xmlDoc = parser.parseFromString(args[0].join(''), mimeType.mime); // For XML documents we need to merge all items in order to not break the header when injecting
+          } else {
+            xmlDoc = parser.parseFromString(args[0][0], mimeType.mime);
+          }
+
+          if (xmlDoc.getElementsByTagName("parsererror").length === 0) { // if no errors were found while parsing...
+            xmlDoc.documentElement.insertAdjacentHTML('afterbegin', injectedCode);
+    
+            if (mimeType.useXMLparser === true) {
+              args[0] = [new XMLSerializer().serializeToString(xmlDoc)];
+            } else {
+              args[0][0] = xmlDoc.documentElement.outerHTML;
+            }
+          }
+        }
+      }
+
+      return instantiate(_Blob, args); // arguments?
+    }
+
+    // Copy props and methods
+    let propNames = Object.getOwnPropertyNames(_Blob);
+    for (let i = 0; i < propNames.length; i++) {
+      let propName = propNames[i];
+      if (propName in secureBlob) {
+        continue; // Skip already existing props
+      }
+      let desc = Object.getOwnPropertyDescriptor(_Blob, propName);
+      Object.defineProperty(secureBlob, propName, desc);
+    }
+
+    secureBlob.prototype = _Blob.prototype;
+    return secureBlob;
+  }(Blob);
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window) {
+      return;
+    }
+    const message = event.data;
+    switch (message.method) {
+      case 'updateLocation':
+        if ((typeof message.info === 'object') && (typeof message.info.coords === 'object')) {
+          hookedObj.genLat = message.info.coords.lat;
+          hookedObj.genLon = message.info.coords.lon;
+          hookedObj.fakeGeo = message.info.fakeIt;
+        }
+        break;
+      default:
+        break;
+    }
+  }, false);
+  //]]>
+}hookGeo();})()</script>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="Leticia Portella">
+
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@leleportella">
+<meta name="twitter:creator" content="@leleportella">
+
+
+<meta property="og:title" content="
+
+    SQLAlchemy Basics Tutorial
+
+">
+<meta property="og:image" content="
+
+    https://leportella.com/assets/img/posts/bookcase_thumb.jpg
+
+">
+<meta property="og:description" content="
+
+    I’ve been working with Project Jupyter since December of last year and it has been a wonderful experience. The last couple of days I struggled with the SQLAlchemy library that JupyterHub works on its internals. Since I studied this library and had to scratch some Stack Overflow questions to find some answers, I created this post to help digesting some of my doubts and findings.
+
+">
+<meta property="og:url" content="https://leportella.com/sqlalchemy-tutorial/">
+
+
+
+
+<style type="text/css">svg:not(:root).svg-inline--fa{overflow:visible}.svg-inline--fa{display:inline-block;font-size:inherit;height:1em;overflow:visible;vertical-align:-.125em}.svg-inline--fa.fa-lg{vertical-align:-.225em}.svg-inline--fa.fa-w-1{width:.0625em}.svg-inline--fa.fa-w-2{width:.125em}.svg-inline--fa.fa-w-3{width:.1875em}.svg-inline--fa.fa-w-4{width:.25em}.svg-inline--fa.fa-w-5{width:.3125em}.svg-inline--fa.fa-w-6{width:.375em}.svg-inline--fa.fa-w-7{width:.4375em}.svg-inline--fa.fa-w-8{width:.5em}.svg-inline--fa.fa-w-9{width:.5625em}.svg-inline--fa.fa-w-10{width:.625em}.svg-inline--fa.fa-w-11{width:.6875em}.svg-inline--fa.fa-w-12{width:.75em}.svg-inline--fa.fa-w-13{width:.8125em}.svg-inline--fa.fa-w-14{width:.875em}.svg-inline--fa.fa-w-15{width:.9375em}.svg-inline--fa.fa-w-16{width:1em}.svg-inline--fa.fa-w-17{width:1.0625em}.svg-inline--fa.fa-w-18{width:1.125em}.svg-inline--fa.fa-w-19{width:1.1875em}.svg-inline--fa.fa-w-20{width:1.25em}.svg-inline--fa.fa-pull-left{margin-right:.3em;width:auto}.svg-inline--fa.fa-pull-right{margin-left:.3em;width:auto}.svg-inline--fa.fa-border{height:1.5em}.svg-inline--fa.fa-li{width:2em}.svg-inline--fa.fa-fw{width:1.25em}.fa-layers svg.svg-inline--fa{bottom:0;left:0;margin:auto;position:absolute;right:0;top:0}.fa-layers{display:inline-block;height:1em;position:relative;text-align:center;vertical-align:-.125em;width:1em}.fa-layers svg.svg-inline--fa{-webkit-transform-origin:center center;transform-origin:center center}.fa-layers-counter,.fa-layers-text{display:inline-block;position:absolute;text-align:center}.fa-layers-text{left:50%;top:50%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);-webkit-transform-origin:center center;transform-origin:center center}.fa-layers-counter{background-color:#ff253a;border-radius:1em;-webkit-box-sizing:border-box;box-sizing:border-box;color:#fff;height:1.5em;line-height:1;max-width:5em;min-width:1.5em;overflow:hidden;padding:.25em;right:0;text-overflow:ellipsis;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top right;transform-origin:top right}.fa-layers-bottom-right{bottom:0;right:0;top:auto;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:bottom right;transform-origin:bottom right}.fa-layers-bottom-left{bottom:0;left:0;right:auto;top:auto;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:bottom left;transform-origin:bottom left}.fa-layers-top-right{right:0;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top right;transform-origin:top right}.fa-layers-top-left{left:0;right:auto;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top left;transform-origin:top left}.fa-lg{font-size:1.3333333333em;line-height:.75em;vertical-align:-.0667em}.fa-xs{font-size:.75em}.fa-sm{font-size:.875em}.fa-1x{font-size:1em}.fa-2x{font-size:2em}.fa-3x{font-size:3em}.fa-4x{font-size:4em}.fa-5x{font-size:5em}.fa-6x{font-size:6em}.fa-7x{font-size:7em}.fa-8x{font-size:8em}.fa-9x{font-size:9em}.fa-10x{font-size:10em}.fa-fw{text-align:center;width:1.25em}.fa-ul{list-style-type:none;margin-left:2.5em;padding-left:0}.fa-ul>li{position:relative}.fa-li{left:-2em;position:absolute;text-align:center;width:2em;line-height:inherit}.fa-border{border:solid .08em #eee;border-radius:.1em;padding:.2em .25em .15em}.fa-pull-left{float:left}.fa-pull-right{float:right}.fa.fa-pull-left,.fab.fa-pull-left,.fal.fa-pull-left,.far.fa-pull-left,.fas.fa-pull-left{margin-right:.3em}.fa.fa-pull-right,.fab.fa-pull-right,.fal.fa-pull-right,.far.fa-pull-right,.fas.fa-pull-right{margin-left:.3em}.fa-spin{-webkit-animation:fa-spin 2s infinite linear;animation:fa-spin 2s infinite linear}.fa-pulse{-webkit-animation:fa-spin 1s infinite steps(8);animation:fa-spin 1s infinite steps(8)}@-webkit-keyframes fa-spin{0%{-webkit-transform:rotate(0);transform:rotate(0)}100%{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}@keyframes fa-spin{0%{-webkit-transform:rotate(0);transform:rotate(0)}100%{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}.fa-rotate-90{-webkit-transform:rotate(90deg);transform:rotate(90deg)}.fa-rotate-180{-webkit-transform:rotate(180deg);transform:rotate(180deg)}.fa-rotate-270{-webkit-transform:rotate(270deg);transform:rotate(270deg)}.fa-flip-horizontal{-webkit-transform:scale(-1,1);transform:scale(-1,1)}.fa-flip-vertical{-webkit-transform:scale(1,-1);transform:scale(1,-1)}.fa-flip-both,.fa-flip-horizontal.fa-flip-vertical{-webkit-transform:scale(-1,-1);transform:scale(-1,-1)}:root .fa-flip-both,:root .fa-flip-horizontal,:root .fa-flip-vertical,:root .fa-rotate-180,:root .fa-rotate-270,:root .fa-rotate-90{-webkit-filter:none;filter:none}.fa-stack{display:inline-block;height:2em;position:relative;width:2.5em}.fa-stack-1x,.fa-stack-2x{bottom:0;left:0;margin:auto;position:absolute;right:0;top:0}.svg-inline--fa.fa-stack-1x{height:1em;width:1.25em}.svg-inline--fa.fa-stack-2x{height:2em;width:2.5em}.fa-inverse{color:#fff}.sr-only{border:0;clip:rect(0,0,0,0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}.sr-only-focusable:active,.sr-only-focusable:focus{clip:auto;height:auto;margin:0;overflow:visible;position:static;width:auto}.svg-inline--fa .fa-primary{fill:var(--fa-primary-color,currentColor);opacity:1;opacity:var(--fa-primary-opacity,1)}.svg-inline--fa .fa-secondary{fill:var(--fa-secondary-color,currentColor);opacity:.4;opacity:var(--fa-secondary-opacity,.4)}.svg-inline--fa.fa-swap-opacity .fa-primary{opacity:.4;opacity:var(--fa-secondary-opacity,.4)}.svg-inline--fa.fa-swap-opacity .fa-secondary{opacity:1;opacity:var(--fa-primary-opacity,1)}.svg-inline--fa mask .fa-primary,.svg-inline--fa mask .fa-secondary{fill:#000}.fad.fa-inverse{color:#fff}</style><link rel="apple-touch-icon" href="https://leportella.com/assets/favico/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="https://leportella.com/assets/favico/android-chrome-512x512.png" sizes="512x512">
+<link rel="icon" type="image/png" href="https://leportella.com/assets/favico/android-chrome-192x5192.png" sizes="192x192">
+<link rel="icon" type="image/png" href="https://leportella.com/assets/favico/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="https://leportella.com/assets/favico/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" sizes="180x180" href="https://leportella.com/apple-touch-icon-180x180.png">
+<meta name="description" content="
+
+    I’ve been working with Project Jupyter since December of last year and it has been a wonderful experience. The last couple of days I struggled with the SQLAlchemy library that JupyterHub works on its internals. Since I studied this library and had to scratch some Stack Overflow questions to find some answers, I created this post to help digesting some of my doubts and findings.
+
+">
+
+
+<meta name="robots" content="index, follow">
+
+
+<title>
+
+    SQLAlchemy Basics Tutorial
+
+</title>
+
+
+
+<link rel="canonical" href="https://leportella.com/sqlalchemy-tutorial/">
+
+
+
+
+
+
+<link href="./SQLAlchemy Basics Tutorial_files/main.min.cbd46abc53a5ce8497006c404e83b7274cb2c9e8ee4bb9720574d6b4d0341e2a.css" rel="stylesheet">
+<script src="./SQLAlchemy Basics Tutorial_files/embed.js" data-timestamp="1634280115462"></script><link rel="prefetch" as="style" href="https://c.disquscdn.com/next/embed/styles/lounge.fd7a422849a52b7b84c0455e2671d573.css"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/embed/common.bundle.a0ed109e21af94c55c513d7580d5773c.js"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/embed/lounge.bundle.7e4d408dc5aa1f8d59ee30aa6088b986.js"><link rel="prefetch" as="script" href="https://disqus.com/next/config.js"><script async="" id="dsq_recs_scr" src="./SQLAlchemy Basics Tutorial_files/recommendations.js"></script><link rel="prefetch" as="style" href="https://c.disquscdn.com/next/recommendations/styles/recommendations.7a0a0fc46819bca7c5bed35193afbc84.css"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/recommendations/common.bundle.3599f83da3e37f2d8675b56e0b4f87a4.js"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/recommendations/recommendations.bundle.926bc472e4859a48daa346b4ba2ab4f4.js"><link rel="prefetch" as="script" href="https://disqus.com/next/config.js"><script src="./SQLAlchemy Basics Tutorial_files/alfie_v4.63f1ab6d6b9d5807dc0c94ef3fe0b851.js" async="" charset="UTF-8"></script></head><body class="d-flex flex-column">
+<header>
+  <nav class="navbar navbar-expand-md navbar-light bg-white absolute-top">
+    <div class="container">
+      <button class="navbar-toggler order-2 order-md-1" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbar-left navbar-right" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse order-3 order-md-2" id="navbar-left">
+        <ul class="navbar-nav mr-auto">
+          
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/">Home</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/travel">Travel</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/wiki">Wiki</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/">🇮🇪 En</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/pt-br">🇧🇷 Pt</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/es">🇪🇸 Es</a>
+              </li>
+            
+          
+        </ul>
+      </div>
+
+      <a class="navbar-brand mx-auto order-1 order-md-3" href="https://leportella.com/">Leticia Portella</a>
+
+      <div class="collapse navbar-collapse order-4 order-md-4" id="navbar-right">
+        <ul class="navbar-nav ml-auto">
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/about">About</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/categories">Categories</a>
+              </li>
+            
+          
+            
+              <li class="nav-item ">
+                <a class="nav-link" href="https://leportella.com/contact">Contact</a>
+              </li>
+            
+          
+        </ul>
+
+        
+      </div>
+    </div>
+  </nav>
+</header>
+
+
+  <main class="main pt-4 flex-grow-1">
+    <div class="container">
+  
+  <div class="row">
+    <div class="col-md-9">
+      <article class="card mb-4">
+  <header class="card-header text-center">
+    <div class="card-meta page-date">
+      
+
+        
+          <time class="post-date" datetime="2019-01-10 21:55">
+            10 January 2019
+          </time>
+        
+
+        
+          
+            <span class="language-separator">●</span>
+            <a hreflang="pt-br" href="https://leportella.com/pt-br/tutorial-sqlalchemy/" class="translations">🇧🇷 Leia em Português</a>
+          
+        
+      
+    </div>
+    <h1 class="card-title page-title">SQLAlchemy Basics Tutorial</h1>
+  </header>
+
+  
+    <center>
+    
+      <img class="card-img" src="./SQLAlchemy Basics Tutorial_files/bookcase_thumb@2x.jpg" alt="" style="max-height: 700px; max-width: 800px;">
+    
+    </center>
+  
+  
+
+  <div class="card-body">
+    <p><a href="https://leportella.com/sqlalchemy-tutorial/%7B%7Bbase%7D%7D/outreachy-I.html">I’ve been working with Project Jupyter since December of last year</a> and it has been a wonderful experience. The last couple of days I struggled with the SQLAlchemy library that <a href="https://github.com/jupyterhub/jupyterhub">JupyterHub</a> works on its internals. Since I studied this library and had to scratch some <a href="https://stackoverflow.com/">Stack Overflow</a> questions to find some answers, I created this post to help digesting some of my doubts and findings.</p>
+<p>Since this post became surprisingly long, I decided that the main problem I was having with SQLAlchemy should be in a separated post. So, keep tuned :)</p>
+<p>All code is available <a href="https://github.com/leportella/sqlalchemy-basics-post/">here</a>.</p>
+<h2 id="creating-and-understanding-the-engine">Creating and understanding the Engine</h2>
+<p>To start workin with SQLAlchemy, the first thing that they taught in the tutorials is to create an Engine. The Engine is how SQLAlchemy communicates with your database, so, when creating the Engine you should add your database (db) URL and that’s basically it.</p>
+<p>Although we can access the db through Engine commands (we will see how), we usually don’t. You can, but you shouldn’t :)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> create_engine
+
+engine <span style="color:#f92672">=</span> create_engine(<span style="color:#e6db74">'sqlite:///:memory:'</span>, echo<span style="color:#f92672">=</span>True)
+</code></pre></div><p>So, you are just telling where your database currently is located. The attribute <code>echo=True</code> will make SQLAlchemy to log all SQL commands it is doing while you apply commands. This should not be activated in production, ok?</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/0gVcCUg.png" width="200px"> 
+</figure>
+
+<p>Once your engine knows your database, it is easy to execute commands on it by using a method called <code>engine.execute(...)</code>. You can see how this is done here:</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/engine_execute.gif" width="450px"> 
+</figure>
+
+<p>So you have a two way street: the Engine that knows where your db is and a method (<code>engine.execute(...)</code>) to change the db using the Engine:</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/yjdhaTZ.png" width="200px"> 
+</figure>
+
+<h2 id="engine-or-connection">Engine or connection?</h2>
+<p>I also saw in some tutorials that you have another way of doing SQL commands through the <code>engine</code> by making a <code>connection</code> such as:</p>
+<pre><code>conn = engine.connect()
+conn.execute(...)
+</code></pre><p>This allows us to create transaction commands, which means that all commands must be done successfully or all should rollback in case of an error [<a href="https://docs.microsoft.com/en-us/sql/t-sql/language-elements/transactions-transact-sql?view=sql-server-2017">1</a>]:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">trans <span style="color:#f92672">=</span> conn<span style="color:#f92672">.</span>begin()
+conn<span style="color:#f92672">.</span>execute(<span style="color:#e6db74">'INSERT INTO "EX1" (name) '</span>
+             <span style="color:#e6db74">'VALUES ("Hello")'</span>)
+trans<span style="color:#f92672">.</span>commit()
+</code></pre></div><p>So, actually, the structure looks more like this now:</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/Bcp1Zku.png" width="200px"> 
+</figure>
+
+<p>However, looking more deeply <a href="https://stackoverflow.com/a/34364247/3538098">some answers</a> about the differences between <code>engine.execute(...)</code> and <code>connection.execute(...)</code> I found that they are not different at all:</p>
+<blockquote>
+<p>“Using Engine.execute() and Connection.execute() is (almost) one the same thing, in formal, Connection object gets created implicitly, and in later case we explicitly instantiate it.’’</p>
+</blockquote>
+<p>So, feel free to use each one of those if you would like :)</p>
+<h2 id="creating-and-understanding-sessions">Creating and understanding Sessions</h2>
+<p>Until now we connected to our database and were able to execute commands through SQL statements. However, the thing that makes SQLAlchemy so attractive is its ORM, which was not discussed so far.</p>
+<p>The ORM must have a <code>session</code> to make the middle-ground between the objects we will deal with in Python and the engine that actually communicates with the database. So, we need a function called <code>sessionmaker</code> that we’ll pass our engine to.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> sessionmaker
+
+Session <span style="color:#f92672">=</span> sessionmaker(bind<span style="color:#f92672">=</span>engine)
+session <span style="color:#f92672">=</span> Session()
+</code></pre></div><p>So, you will use sessions to talk to your tables and make queries, but is the <code>engine</code> that is actually implementing things on your db.</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/iqV59ky.png" width="300px"> 
+</figure>
+
+<p>Although it seems confusing having three entities before even starting with our tables, most of the times after the initial setup you will use the <code>session</code> much more than the <code>engine</code> and <code>connection</code> will be done implicitly by the two firsts, ok?</p>
+<h2 id="creating-tables">Creating tables</h2>
+<p>Now we want to create tables in our db to work with them and finally start to take a look at SQLAlchemy’s ORM. To create new tables we will create classes that contain attributes. Each class will be a table in our db and each attribute will be a column in this table. To map which table in the db will be related to each class in our files, we will use a SQLAlchemy system called <em>Declarative</em>. To use this, the first thing we must do is to instantiate a <code>Base</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy.ext.declarative <span style="color:#f92672">import</span> declarative_base
+
+Base <span style="color:#f92672">=</span> declarative_base()
+</code></pre></div><p>Now we create a class <code>User</code> that inherits from our <code>Base</code> declarative. We will create only three attributes to our class: <code>id</code> (which is a primary key and can’t be null), a name and a password. Since we are using <em>Declaratives</em>, we must add at least two attributes: 1) a <code>__tablename__</code> that how your table will be actually called inside the db and 2) at least one Column which is part of a primary key [<a href="https://docs.sqlalchemy.org/en/latest/orm/tutorial.html#declare-a-mapping">2</a>].</p>
+<p>We will also add an optional method called <code>__repr__</code> that will be a string that will be returned when we see our user instance.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> Column, Integer, String
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">User</span>(Base):
+    __tablename__ <span style="color:#f92672">=</span> <span style="color:#e6db74">'users'</span>
+
+    id <span style="color:#f92672">=</span> Column(Integer, primary_key<span style="color:#f92672">=</span>True)
+    name <span style="color:#f92672">=</span> Column(String)
+    password <span style="color:#f92672">=</span> Column(String)
+
+    <span style="color:#66d9ef">def</span> __repr__(self):
+        <span style="color:#66d9ef">return</span> f<span style="color:#e6db74">'User {self.name}'</span>
+</code></pre></div><p>We now have a class that indicates us how our table must be on our database. However, nothing is changed so far. To actually create the tables on our database, we will need the declarative <code>Base</code> we just created and the <code>engine</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Base<span style="color:#f92672">.</span>metadata<span style="color:#f92672">.</span>create_all(engine)
+</code></pre></div><p>This is when SQLAlchemy will actually do something in our database. Since we have the variable <code>echo</code> set to <code>True</code>, we can see exactly which SQL statement the <code>engine</code> actually did on the database:</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/kU4Snpb.png" width="400px"> 
+</figure>
+
+<h2 id="adding-new-records">Adding new records</h2>
+<p>Now, we can use the class to create a new record on our database. We can user the <code>User</code> class to create a new user and <code>session.add(...)</code> to add the instance to our database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">user <span style="color:#f92672">=</span> User(name<span style="color:#f92672">=</span><span style="color:#e6db74">'John Snow'</span>, password<span style="color:#f92672">=</span><span style="color:#e6db74">'johnspassword'</span>)
+session<span style="color:#f92672">.</span>add(user)
+
+<span style="color:#66d9ef">print</span>(user<span style="color:#f92672">.</span>id)  <span style="color:#75715e"># None</span>
+</code></pre></div><p>Now, even though we said we needed a primary key, I didn’t pass one for the model. And if I try to print the id of the user I just created, it will return <code>None</code>.</p>
+<p>This is because <code>session.add</code> just register the transactions we want it to do, but it doesn’t actually do it [<a href="https://stackoverflow.com/a/4202016/3538098">3</a>].</p>
+<p>As explained on <a href="https://stackoverflow.com/a/4202016/3538098">this link</a>, we have two operations that can be done here:</p>
+<blockquote>
+<p><code>session.flush()</code> communicates a series of operations to the database (insert, update, delete). The database maintains them as pending operations in a transaction. The changes aren’t persisted permanently to disk, or visible to other transactions until the database receives a COMMIT for the current transaction (which is what <code>session.commit()</code> does).</p>
+</blockquote>
+<p>or</p>
+<blockquote>
+<p><code>session.commit()</code> commits (persists) those changes to the database. <code>session.commit()</code> always calls for <code>session.flush()</code> as part of it.</p>
+</blockquote>
+<h2 id="making-queries">Making queries</h2>
+<p>Once we have our records on our database, we need to be able to find them :)</p>
+<p>So, to the <code>query</code> function of our <code>session</code> we will pass the class we want to look for our instance, an then use the method to filter by an attribute called <code>filter_by</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">query <span style="color:#f92672">=</span> session<span style="color:#f92672">.</span>query(User)<span style="color:#f92672">.</span>filter_by(name<span style="color:#f92672">=</span><span style="color:#e6db74">'John'</span>)
+</code></pre></div><p>Finally, we pass a method to indicate what we want to do with this query: count the number of records found (<code>.count()</code>), return all records found (<code>.all()</code>), return the first record (<code>.first()</code>) and so on:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">query<span style="color:#f92672">.</span>count()
+</code></pre></div><p>Another way is to use the <code>filter</code> method, instead of the <code>filter_by</code>, which has a slightly different syntax:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">session<span style="color:#f92672">.</span>query(User)<span style="color:#f92672">.</span>filter(User<span style="color:#f92672">.</span>name<span style="color:#f92672">==</span><span style="color:#e6db74">'John'</span>)<span style="color:#f92672">.</span>first()
+</code></pre></div><p>With <code>filter</code> method, you can also look for strings similar to what you have:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">session<span style="color:#f92672">.</span>query(User)<span style="color:#f92672">.</span>filter(User<span style="color:#f92672">.</span>name<span style="color:#f92672">.</span>like(<span style="color:#e6db74">'%John%'</span>))<span style="color:#f92672">.</span>first()
+</code></pre></div><p>On <a href="https://github.com/jupyterhub/jupyterhub">Jupyterhub</a> they added to each model a <em>classmethod</em> that would simplify this rather complicated syntax. We can add a method that you can pass a <code>session</code>, an attribute, and it returns all the elements, for instance:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">User</span>(Base):
+  <span style="color:#f92672">...</span>
+
+  <span style="color:#a6e22e">@classmethod</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">find_by_name</span>(cls, session, name):
+    <span style="color:#66d9ef">return</span> session<span style="color:#f92672">.</span>query(cls)<span style="color:#f92672">.</span>filter_by(name<span style="color:#f92672">=</span>name)<span style="color:#f92672">.</span>all()
+</code></pre></div><p>So, the new way to find all users named only ‘John’:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Product<span style="color:#f92672">.</span>find_by_name(session, <span style="color:#e6db74">'John'</span>)
+</code></pre></div><h2 id="creating-new-tables-tables-after-initial-create_all">Creating new tables tables after initial create_all</h2>
+<p>On problem I bump into while I was working with <a href="https://jupyter.org/">Project Jupyter</a> was that I needed to create a new table to a database and <code>engine</code> that already had a initial creation (the <code>Base.metadata.create_all(engine)</code>).</p>
+<p>So, imagine that now I want a table with Products such as the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> Column, Integer, String
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Product</span>(Base):
+    __tablename__ <span style="color:#f92672">=</span> <span style="color:#e6db74">'products'</span>
+
+    id <span style="color:#f92672">=</span> Column(Integer, primary_key<span style="color:#f92672">=</span>True)
+    name <span style="color:#f92672">=</span> Column(String)
+</code></pre></div><p>The simplest way I found to do this was simply:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Product<span style="color:#f92672">.</span>__table__<span style="color:#f92672">.</span>create(engine)
+</code></pre></div><h2 id="creating-a-foreign-key-relationship">Creating a Foreign Key relationship</h2>
+<p>Imagine that you would like to connect each product to a user in your system. So, in each instance of <code>Product</code> you would like to store an instance of <code>User</code>:</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/BJqWSMj.png" width="350px"> 
+</figure>
+
+<p>If you you are creating all tables now, you should add a Column on your <code>Product</code> class that references the Foreign Key of the user and a relationship with the <code>User</code> class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> Column, ForeignKey, Integer, String
+<span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> relationship
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Product</span>(Base):
+    __tablename__ <span style="color:#f92672">=</span> <span style="color:#e6db74">'product'</span>
+
+    id <span style="color:#f92672">=</span> Column(Integer, primary_key<span style="color:#f92672">=</span>True)
+    name <span style="color:#f92672">=</span> Column(String)
+    user_id <span style="color:#f92672">=</span> Column(Integer, ForeignKey(<span style="color:#e6db74">'user.id'</span>))
+    user <span style="color:#f92672">=</span> relationship(<span style="color:#e6db74">'User'</span>)
+</code></pre></div><p>And add a relationship between <code>User</code> and <code>Product</code> on <code>User</code> class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> Column, Integer, String
+<span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> relationship
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">User</span>(Base):
+    __tablename__ <span style="color:#f92672">=</span> <span style="color:#e6db74">'user'</span>  <span style="color:#75715e"># if you use base it is obligatory</span>
+
+    id <span style="color:#f92672">=</span> Column(Integer, primary_key<span style="color:#f92672">=</span>True)  <span style="color:#75715e"># obligatory</span>
+    name <span style="color:#f92672">=</span> Column(String)
+    password <span style="color:#f92672">=</span> Column(String)
+    products <span style="color:#f92672">=</span> relationship(Product, backref<span style="color:#f92672">=</span><span style="color:#e6db74">"users"</span>)
+</code></pre></div><p>Now you can create all tables by using the <code>Base.metada.create_all(engine)</code> we have seen previously.</p>
+<p>Now, you can create a user and a product that are related with each other:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">user <span style="color:#f92672">=</span> User(name<span style="color:#f92672">=</span><span style="color:#e6db74">'John'</span>)
+product <span style="color:#f92672">=</span> Product(name<span style="color:#f92672">=</span><span style="color:#e6db74">'wolf'</span>, user<span style="color:#f92672">=</span>user)
+
+session<span style="color:#f92672">.</span>add_all([user, product])
+session<span style="color:#f92672">.</span>commit()
+</code></pre></div><p>And that’s it :)</p>
+<figure>
+    <img src="./SQLAlchemy Basics Tutorial_files/giphy.gif"> 
+</figure>
+
+    ❤ 
+    <br>
+    Cheers!
+    <br>
+    Leticia
+    <hr>
+    <h3>Comments</h3>
+    <div id="disqus_recommendations" style="margin-bottom: 12px;"><iframe id="dsq-app6660" name="dsq-app6660" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" width="100%" src="./SQLAlchemy Basics Tutorial_files/saved_resource.html" style="width: 100% !important; border: none !important; overflow: hidden !important; height: 240px !important; display: inline !important; box-sizing: border-box !important;" horizontalscrolling="no" verticalscrolling="no"></iframe></div><div id="disqus_thread"><iframe id="dsq-app1608" name="dsq-app1608" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" width="100%" src="./SQLAlchemy Basics Tutorial_files/saved_resource(1).html" style="width: 1px !important; min-width: 100% !important; border: none !important; overflow: hidden !important; height: 620px !important;" horizontalscrolling="no" verticalscrolling="no"></iframe><iframe id="indicator-north" name="indicator-north" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" style="width: 827px !important; border: none !important; overflow: hidden !important; top: 0px !important; min-width: 827px !important; max-width: 827px !important; position: fixed !important; z-index: 2147483646 !important; height: 0px !important; min-height: 0px !important; max-height: 0px !important; display: none !important;" src="./SQLAlchemy Basics Tutorial_files/saved_resource(2).html"></iframe><iframe id="indicator-south" name="indicator-south" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" style="width: 827px !important; border: none !important; overflow: hidden !important; bottom: 0px !important; min-width: 827px !important; max-width: 827px !important; position: fixed !important; z-index: 2147483646 !important; height: 0px !important; min-height: 0px !important; max-height: 0px !important; display: none !important;" src="./SQLAlchemy Basics Tutorial_files/saved_resource(3).html"></iframe></div>
+<script>
+(function() {
+var d = document, s = d.createElement('script');
+s.src = 'https://leportella-com.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</article>
+    </div>
+    <div class="col-md-3 ml-auto">
+      <aside class="sidebar">
+  <div class="card mb-4">
+    <div class="card-body">
+      <h4 class="card-title">About me</h4>
+      <p class="card-text">A happy dev, in love with data science. I write about technology, career and life.</p>
+    </div>
+  </div>
+</aside>
+
+<aside class="sidebar sidebar-sticky">
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <h4 class="card-title">Topics</h4>
+      <nav id="TableOfContents">
+  <ol>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#creating-and-understanding-the-engine">Creating and understanding the Engine</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#engine-or-connection">Engine or connection?</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#creating-and-understanding-sessions">Creating and understanding Sessions</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#creating-tables">Creating tables</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#adding-new-records">Adding new records</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#making-queries">Making queries</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#creating-new-tables-tables-after-initial-create_all">Creating new tables tables after initial create_all</a></li>
+    <li><a href="https://leportella.com/sqlalchemy-tutorial/#creating-a-foreign-key-relationship">Creating a Foreign Key relationship</a></li>
+  </ol>
+</nav>
+    </div>
+  </div>
+  
+
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <h4 class="card-title">Check posts in similar categories</h4>
+      <ul>
+        
+
+          
+            <li><a href="https://leportella.com/categories/databases">databases</a></li>
+          
+        
+
+          
+            <li><a href="https://leportella.com/categories/tutorial">tutorial</a></li>
+          
+        
+      </ul>
+    </div>
+  </div>
+  
+</aside>
+
+    </div>
+  </div>
+  
+
+    </div>
+  </main><footer class="site-footer bg-darkest">
+  <div class="container">
+
+    <ul class="nav justify-content-center">
+      <li class="nav-item">
+        <a class="nav-link" href="https://www.instagram.com/lepelomundo/"><img src="./SQLAlchemy Basics Tutorial_files/instagram.svg" style="width: 20px"></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://twitter.com/leleportella"><img src="./SQLAlchemy Basics Tutorial_files/twitter.svg" style="width: 20px"></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/leportella"><img src="./SQLAlchemy Basics Tutorial_files/github.svg" style="width: 20px"></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://pizzadedados.com/"><img src="./SQLAlchemy Basics Tutorial_files/pizza.svg" style="width: 20px"></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://www.goodreads.com/user/show/83961617-leticia-portella"><img src="./SQLAlchemy Basics Tutorial_files/goodreads.svg" style="width: 20px"></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://www.youtube.com/pizzadedados"><img src="./SQLAlchemy Basics Tutorial_files/youtube.svg" style="width: 20px"></a>
+      </li>
+    </ul>
+    <div class="copy">
+      © Leticia Portella 2020<br>
+      All rights reserved
+    </div>
+  </div>
+</footer>
+
+<script src="./SQLAlchemy Basics Tutorial_files/main.min.77110b445c48f6143220d06b50cb9d891dbbd9e64cccfd6f576cedef98801cc8.js"></script>
+
+
+
+  
+  <script async="" src="./SQLAlchemy Basics Tutorial_files/js"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  
+    gtag('config', 'UA-106178084-1');
+  </script>
+  
+  
+  
+  <script data-ad-client="ca-pub-8434843879837451" async="" src="./SQLAlchemy Basics Tutorial_files/f.txt"></script>
+  
+  
+  <script data-goatcounter="https://stats.leportella.com/count" async="" src="./SQLAlchemy Basics Tutorial_files/count.js"></script>
+
+
+<iframe style="display: none;" src="./SQLAlchemy Basics Tutorial_files/saved_resource(4).html"></iframe><iframe style="display: none;" src="./SQLAlchemy Basics Tutorial_files/saved_resource(5).html"></iframe></body></html>
